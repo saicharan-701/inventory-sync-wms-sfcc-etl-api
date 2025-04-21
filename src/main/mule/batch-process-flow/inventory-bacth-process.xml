@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:kafka="http://www.mulesoft.org/schema/mule/kafka"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/kafka http://www.mulesoft.org/schema/mule/kafka/current/mule-kafka.xsd">
+	<flow name="inventory-bacth-processFlow" doc:id="89460d3e-5788-4f4d-8b69-36a968affa09" >
+		<logger level="INFO" doc:name="batch-process-start" doc:id="54d2b02d-10f0-4ce3-a670-02934e695dbe" message="Reading_File_From_Location" />
+		<set-variable value='#[now() &gt;&gt; "UTC"]' doc:name="start-time" doc:id="2d6aa2e0-1bd6-4bd5-b856-34a44b2ca368" variableName="startTime"/>
+		<set-variable value='#["inventory_" ++ ((now() &gt;&gt; "UTC") as String {format : "dd-MM-yyyy"}) ++ ".csv"]' doc:name="fileName" doc:id="96eb947c-4e4f-4d95-89a4-7b5961009f71" variableName="fileName"/>
+		<file:read
+     path='#["C:\\Users\\chint\\OneDrive\\Documents\\batch-poc\\input\\" ++ vars.fileName]'
+     outputMimeType="application/csv; streaming=true; header=true"/>
+		<remove-variable doc:name="fileName" doc:id="d331ffa8-6457-4c7b-adb7-b07da09c0128" variableName="fileName"/>
+		<batch:job jobName="batch-pocBatch_Job" doc:id="7b62b037-e2fc-4297-87c3-81e0652cc1f3" maxFailedRecords="-1" blockSize="1200" schedulingStrategy="ROUND_ROBIN">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="5d98d19d-a9eb-4744-9aa0-ea58e6f3caac" >
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="16f92902-0a37-43f5-90c5-0527b57bbe59" size="600">
+						<kafka:publish doc:name="Publish" doc:id="3370136a-cafe-4d71-879c-9886377163ad" config-ref="Apache_Kafka_Producer_configuration" topic="batch-store" partition="0" key="#[uuid()]">
+							<reconnect />
+							<kafka:message ><![CDATA[#[//output Json --- flatten(vars.records.payload)
+output application/csv header=true --- flatten(vars.records.payload)]]]></kafka:message>
+						</kafka:publish>
+					
+</batch:aggregator>
+					<!-- [STUDIO:"All"]<validation:all doc:name="All" doc:id="dd2f22e4-b8b4-46ec-8f03-71452bec4cf2" >
+						<validation:is-not-blank-string doc:name="SKU Is not blank string" doc:id="c0ed574f-126d-4a0d-8fa6-10adf7f5b29a" value="#[payload.SKU&#93;" message="SKU is empty"/>
+						<validation:is-not-blank-string doc:name="StoreId Is not blank" doc:id="f9726f68-607d-4893-9702-6b69e564458a" value="#[payload.StoreId&#93;" message="StoreId is empty"/>
+						<validation:matches-regex doc:name="Type Check" doc:id="5dc177f8-f5ce-4bb5-9012-292c80e567b5" value='#[payload."Type"&#93;' regex='#["^(Standard|Backorder)"&#93;' message='#["Type is not (Standard|Backorder)"&#93;' />
+						<validation:is-number numberType="INTEGER" doc:name="Quantity Is number" doc:id="ad5debce-9962-4177-bd83-d7ede59922e7" value="#[payload.Quantity&#93;" minValue="#[0&#93;" message="Quantity is not a whole number"/>
+						<validation:is-time doc:name="Timestamp Is time" doc:id="5e5831c5-ec96-4778-948f-4edc7430332a" time='#[payload.Timestamp default ""&#93;' pattern='#["MM/dd/yy HH:mm"&#93;' message="Timestamp is not in valid format"/>
+					</validation:all> [STUDIO] -->
+				</batch:step>
+				<!-- [STUDIO:"Batch_Step1"]<batch:step name="Batch_Step1" doc:id="1dae68ae-ca1c-4295-98c4-e2c9d725917f" acceptPolicy="ONLY_FAILURES">
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="e62a2341-c8a8-4804-92fc-1be799176c6d" size="100">
+						<set-variable value='#["errorRecords"&#93;' doc:name="Set Variable" doc:id="67768930-6927-43f2-bd08-82e021922bc3" variableName="storeId" />
+						<set-payload value="#[errorRecords:payload&#93;" doc:name="Set Payload" doc:id="326d1293-87b0-4b37-a543-627334c1e688" />
+						<flow-ref doc:name="batch-pocSub_Flow" doc:id="47af4858-730b-4769-829b-d60a3f9bc329" name="batch-pocSub_Flow"/>
+						<file:write doc:name="Write" doc:id="541110ed-46fd-4c1b-84ef-b8aeca9fa0b4" path='#["C:\\Users\\chint\\OneDrive\\Documents\\batch-poc\\error\\" ++ "inventory_" ++ ((now() &gt;&gt; "UTC") as String {format : "dd-MM-yyyy"}) ++ ".csv"&#93;' />
+						<remove-variable doc:name="storeId" doc:id="036114cf-99f4-44f4-b7df-c651b43092e3" variableName="storeId" />
+					</batch:aggregator>
+					<ee:transform doc:name="Transform Message" doc:id="06297698-324e-4408-a5b1-e4044f72dc8c" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+&#45;&#45;-
+vars.records.payload ++ {"errorMessage": Batch::getStepExceptions().Batch_Step.summaryMessage replace "\n" with " | "}&#93;&#93;></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step> [STUDIO] -->
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="186b6116-18a5-4a89-a906-2cbfaf0cb1ca" message="FLOW_COMPLETED #[vars.startTime - now()]" />
+			</batch:on-complete>
+		</batch:job>
+  <set-payload value='#[output Json --- { "status": "Load Phase Completed"}]' doc:name="load-phase" doc:id="0b279a8b-d492-4d5b-b66c-e9f8025a6bcc" />
+		<logger level="INFO" doc:name="batch-process-end" message="FLOW_COMPLETED #[vars.startTime - now()]"/>
+		<remove-variable doc:name="Remove Variable" doc:id="04e40fff-5135-427f-b621-20bdbbdd9785" variableName="startTime"/>
+	</flow>
+</mule>

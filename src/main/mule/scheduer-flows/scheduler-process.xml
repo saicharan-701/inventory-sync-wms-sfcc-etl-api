@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="scheduler-process-flow" doc:id="c445f5df-eac4-4a02-86ac-e956274d1465" >
+		<scheduler doc:name="Scheduler" doc:id="832690c9-c49f-407e-aaae-96a2e4d5190d" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="scheduler-start-logger" doc:id="b161e83b-4952-47e0-b777-bf9746d19147" message='Inventory scheduler process started : CorrelationId -  #[correlationId] , TimeStamp - #[now() &gt;&gt; "UTC"]'/>
+		<logger level="INFO" doc:name="scheduler-end-logger" doc:id="9fe81dc8-5d0b-4ac9-9e55-5f16d7883a2a" message='Inventory scheduler process completed : CorrelationId -  #[correlationId] , TimeStamp - #[now() &gt;&gt; "UTC"]' />
+	</flow>
+</mule>

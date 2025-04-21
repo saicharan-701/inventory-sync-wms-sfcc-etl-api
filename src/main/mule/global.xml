@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:kafka="http://www.mulesoft.org/schema/mule/kafka" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/kafka http://www.mulesoft.org/schema/mule/kafka/current/mule-kafka.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<http:listener-config name="inventory-sync-wms-sfcc-etl-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="inventory-sync-wms-sfcc-etl-api-config" api="resource::71f3d33a-2aa4-4343-a6cb-f9af1fcee029:inventory-sync-wms-sfcc-etl-api:1.0.0:raml:zip:inventory-sync-wms-sfcc-etl-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" queryParamsStrictValidation="true" headersStrictValidation="true"/>
+	<kafka:consumer-config name="Apache_Kafka_Consumer_configuration" doc:name="Apache Kafka Consumer configuration" doc:id="97b8ad33-8b07-47b2-8918-3a1bec9f313b" >
+		<kafka:consumer-plaintext-connection fetchMinimumSizeUnit="MB" fetchMaximumWaitTimeout="2" fetchMaximumWaitTimeoutUnit="SECONDS" recordLimit="30000" fetchMaximumSize="10" fetchMinimumSize="10" receiveBufferSize="512" sendBufferSize="256" maximumPartitionFetchSize="10" sessionTimeout="20">
+			<reconnection >
+				<reconnect />
+			</reconnection>
+			<kafka:bootstrap-servers >
+				<kafka:bootstrap-server value="localhost:9092" />
+			</kafka:bootstrap-servers>
+			<kafka:assignments >
+				<kafka:topic-partition topic="batch-store" partition="0" />
+			</kafka:assignments>
+		</kafka:consumer-plaintext-connection>
+	</kafka:consumer-config>
+	<kafka:producer-config name="Apache_Kafka_Producer_configuration" doc:name="Apache Kafka Producer configuration" doc:id="628dfabd-8535-424b-b7ad-547288f2c27b" >
+		<kafka:producer-plaintext-connection batchSize="24">
+			<kafka:bootstrap-servers >
+				<kafka:bootstrap-server value="localhost:9092" />
+			</kafka:bootstrap-servers>
+		</kafka:producer-plaintext-connection>
+	</kafka:producer-config>
+	<api-gateway:autodiscovery apiId="123" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="191ccdda-d5f8-4e61-9375-58e882527641" flowRef="inventory-sync-wms-sfcc-etl-api-main" />
+	<global-property doc:name="Global Property" doc:id="5d3b7685-7b22-41bb-915d-960477bb961e" name="mule.env" value="${mule.env}" />
+	<configuration-properties doc:name="Configuration properties" doc:id="953a2456-9fca-4755-8f60-6523ed9bcc5d" file="properties/${mule.env}-config.yaml" />
+	<configuration-properties doc:name="Configuration properties" doc:id="94efc630-3f37-416e-8652-ee20abacd65e" file="properties\common-config.yaml" />
+</mule>
