@@ -1,0 +1,10 @@
+email:
+  user: "![9dgUvezZPw/7/25dCsmZps3wHFkjjTELjVybqOFYACc=]"
+  password: "![47NBzMZ52rFbM9qxHmHwMsIXLJLjt0AEarnDEdMmL7U=]"
+  
+http:
+  listener:
+    keystore:
+      alias: "![dThidbij/k/iE6V8It3+Wg==]"
+      keyPassword: "![Em40F92E/dkVWbKcuIpTGg==]"
+      password: "![Em40F92E/dkVWbKcuIpTGg==]"

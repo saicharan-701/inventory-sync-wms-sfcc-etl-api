@@ -10,6 +10,7 @@
 			</scheduling-strategy>
 		</scheduler>
 		<logger level="INFO" doc:name="scheduler-start-logger" doc:id="b161e83b-4952-47e0-b777-bf9746d19147" message='Inventory scheduler process started : CorrelationId -  #[correlationId] , TimeStamp - #[now() &gt;&gt; "UTC"]'/>
+		<flow-ref doc:name="inventory-bacth-processFlow" doc:id="6278e2e9-b94c-4d78-98ff-3e7d8f29023f" name="inventory-bacth-processFlow"/>
 		<logger level="INFO" doc:name="scheduler-end-logger" doc:id="9fe81dc8-5d0b-4ac9-9e55-5f16d7883a2a" message='Inventory scheduler process completed : CorrelationId -  #[correlationId] , TimeStamp - #[now() &gt;&gt; "UTC"]' />
 	</flow>
 </mule>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="error-hander-framework-exception-handler" doc:id="4fab4ae3-68d4-4496-afa8-235aa8bc19c7" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0387885c-a1f4-4c3b-9fea-b8c2eab6989b" type="${system.errors}">
+			<logger level="INFO" doc:name="start-logger" doc:id="d6011396-b84b-4790-bfcb-ea1195a18bd9" message='#[{&#10;	"flow": "error-handler-framework-system-error-route",&#10;	"message": "Started",&#10;	"correlationId": correlationId&#10;}]'/>
+			<flow-ref doc:name="error-hander-response-sub-flow" doc:id="73571835-473c-4760-a6a9-216daec60cc9" name="error-hander-response-sub-flow"/>
+			<logger level="INFO" doc:name="end-logger" doc:id="1d379c52-c8e2-4cec-a57a-1f07aa607eb5" message='#[{&#10;	"flow": "error-handler-framework-system-error-route",&#10;	"message": "Completed",&#10;	"correlationId": correlationId&#10;}]'/>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="893e812c-1b63-4ff5-807c-d4e46982716c" type="ANY">
+			<logger level="INFO" doc:name="start-logger" doc:id="afcba3e1-5707-40da-afe9-8c8929dea775" message='#[{&#10;	"flow": "error-handler-framework-any-error-route",&#10;	"message": "Started",&#10;	"correlationId": correlationId&#10;}]'/>
+			<flow-ref doc:name="error-hander-response-sub-flow" doc:id="e145a274-2369-482a-9d99-bfbddf93491a" name="error-hander-response-sub-flow"/>
+			<logger level="INFO" doc:name="end-logger" doc:id="6d3542e9-a94e-4223-a280-e115385c8564" message='#[{&#10;	"flow": "error-handler-framework-any-error-route",&#10;	"message": "Completed",&#10;	"correlationId": correlationId&#10;}]'/>
+		</on-error-propagate>
+	</error-handler>
+	<sub-flow name="error-hander-response-sub-flow" doc:id="6ff9063a-3044-4861-b0b8-166e6583ff83" >
+		<set-payload value="#[${file::dwl/error/defaultErrors.dwl}]" doc:name="set-payload-with-default-errors" doc:id="e9dfadb3-6ad7-4135-96b6-ba4ca4bc1153" />
+		<ee:transform doc:name="Transform Message" doc:id="e3d42376-ea3d-4c8b-88e4-57ec87bd47a6" >
+			<ee:message >
+				<ee:set-payload resource="dwl/error/error-transformation.dwl" />
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+		<set-variable value="#[payload.errorCode default 500]" doc:name="Set Variable" doc:id="af504f0c-8577-4f9e-b5ae-a6b32f7f1093" variableName="httpStatus"/>
+		<flow-ref doc:name="error-handler-notification-sub-flow" doc:id="181ef6d5-c031-40c0-89dd-ac18f604c4ff" name="error-handler-notification-sub-flow"/>
+	</sub-flow>
+</mule>

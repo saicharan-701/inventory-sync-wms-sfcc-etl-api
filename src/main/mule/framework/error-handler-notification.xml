@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="b9951226-a359-4da3-a30c-dd31483e9184" >
+		<http:request-connection host="${email.notification.sapi.host}" port="${email.notification.sapi.port}" />
+	</http:request-config>
+	<sub-flow name="error-handler-notification-sub-flow" doc:id="3517f2b4-3400-4ff9-935f-8fdb7ee64a6d" >
+		<ee:transform doc:name="Transform Message" doc:id="ae18022c-4af6-4161-a8a5-289fbbf88577" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.emailRequest]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="4bba2fb0-a442-4913-9544-540d5edc16b7" config-ref="HTTP_Request_configuration" path="${email.notification.sapi.post.send.emailPath}">
+			<reconnect />
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="49306630-28bd-45ab-9992-566c6b2beddd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>

@@ -1,5 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:kafka="http://www.mulesoft.org/schema/mule/kafka"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/kafka http://www.mulesoft.org/schema/mule/kafka/current/mule-kafka.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="inventory-group-kafka-listener-validation-success-flow" doc:id="8d08d817-3fb1-4661-a69c-0f561b812958" >
+		<kafka:batch-message-listener doc:name="Batch message listener" doc:id="92e60d28-2adc-48c0-b55d-d6fb311c66c7" config-ref="Apache_Kafka_Consumer_configuration" ackMode="IMMEDIATE"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c632300a-fa71-4125-81ec-264a6367a8d4" message="#[sizeOf(payload)]"/>
+		<ee:transform doc:name="Transform Message" doc:id="58082a1a-ef34-4095-8eb1-ad84f5630f45" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[ %dw 2.0 
+ output application/json
+ --- 
+ flatten(payload map ((item) -> 
+    read(item.serByteArray.inputStream as Binary, "application/csv")
+ )) groupBy ((value, key) -> value.StoreId)
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message1" doc:id="d9ddfa9f-bd09-470d-a2f0-f11bfe85774d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+@StreamCapable()
+ input payload application/json
+output application/json deferred=true
+---
+payload pluck $
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parallel-foreach doc:name="For Each" doc:id="6a206b80-166f-42da-9678-0b7854bdccbe" collection="#[payload]">
+			<set-variable value='#[output Json --- payload[0].StoreId default "error"]' doc:name="store-id" doc:id="b631e190-d5a7-4010-bc2e-91f03d372656" variableName="storeId" />
+			<flow-ref doc:name="set payload header" doc:id="9894a238-1a9f-438c-b3f1-d29df8d6419c" name="batch-pocSub_Flow" />
+			<file:write doc:name="Write" doc:id="96c230b6-92ca-4930-b292-8092d423d3d5" path='#["C:\\Users\\chint\\OneDrive\\Documents\\batch-poc\\output\\" ++ "inventory_" ++ vars.storeId ++ "_" ++ ((now() &gt;&gt; "UTC") as String {format : "dd-MM-yyyy"}) ++ ".csv"]' mode="APPEND" />
+			<remove-variable doc:name="Remove Variable" doc:id="fdc7ee7d-a0d8-4bd0-9601-f13039645699" variableName="storeId"/>
+		</parallel-foreach>
+		<set-payload value='#[{}]' doc:name="set-empty-payload" doc:id="36760295-d733-4ef9-98ac-739e4491ab32" />
+	</flow>
+	<flow name="inventory-group-kafka-listener-validation-error-flow" doc:id="4d772813-01ca-42c7-89e0-cb5b33a76ef6" >
+		<kafka:batch-message-listener doc:name="Batch message listener" doc:id="755929d1-ecdf-4582-a289-28fa484bd2d7" config-ref="Apache_Kafka_Consumer_configuration"/>
+		<ee:transform doc:name="Transform Message" doc:id="a2f21697-607e-4141-8511-a7be1955f050" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+@StreamCapable()
+ input payload application/json
+output application/csv deferred=true
+---
+ flatten(payload map ((item) -> 
+    read(item.serByteArray.inputStream as Binary, "application/csv")
+ ))]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="8457b70d-08e0-402c-9588-e0323338a9c8" path='#["C:\\Users\\chint\\OneDrive\\Documents\\batch-poc\\output\\" ++ "inventory_" ++ vars.storeId ++ "_" ++ ((now() &gt;&gt; "UTC") as String {format : "dd-MM-yyyy"}) ++ ".csv"]' mode="APPEND" />
+		<set-payload value="#[payload]" doc:name="set-emptypayload" doc:id="d5693e19-b42c-4aca-bf12-622137fbd87f" />
+	</flow>
+	<sub-flow name="batch-pocSub_Flow" doc:id="23d79bfc-80d3-4168-bb8e-ba6b69803de9" >
+		<os:retrieve doc:name="Retrieve" doc:id="14d5048c-86fc-46f5-9931-715fd903b2f6" key="#[vars.storeId]" objectStore="Object_store" target="flag">
+			<os:default-value ><![CDATA[#["NoRecord"]]]></os:default-value>
+		</os:retrieve>
+		<choice doc:name="Choice" doc:id="4c157494-2ba0-438b-a632-4082ded8c9bc" >
+			<when expression='#[vars.flag == "NoRecord"]'>
+				<os:store doc:id="c3ac4ce4-7133-4d14-8708-324641a7ef39" key="#[vars.storeId]" objectStore="Object_store" >
+					<os:value ><![CDATA[#[vars.storeId]]]></os:value>
+				</os:store>
+				<set-payload value="#[output &#10;application/csv header=true&#10;--- &#10;payload]" doc:name="csv-header-payload" doc:id="2fc7e2a9-3dd1-4ec6-a0b8-8aa055adae3c" />
+			</when>
+			<otherwise >
+				<set-payload value="#[output &#10;application/csv header=false&#10;--- &#10;payload]" doc:name="csv-line-payload" doc:id="356abbf6-5936-4171-83c7-b9b1fd6db14b" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

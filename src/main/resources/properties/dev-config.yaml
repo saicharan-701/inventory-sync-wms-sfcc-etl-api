@@ -1,0 +1,27 @@
+api:
+  id: ""
+
+inventory:
+  file:
+    input:
+      path: "C:\\Users\\chint\\OneDrive\\Documents\\batch-poc\\input\\"
+      name: '"inventory_" ++ ((now() >> "UTC") as String {format : "dd-MM-yyyy"}) ++ ".csv"'
+      
+kafka:
+  publisher:
+    topic:
+      name: "batch-store"
+      partition: "0"
+      
+email:
+  notification:
+    sapi:
+      host: ""
+      port: "443"
+      "post":
+        send:
+           emailPath: "send-email"
+  to:
+    address: "saicharan701@gmail.com"
+  from:
+    address: "saicharan701@gmail.com"
